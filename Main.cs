@@ -16,7 +16,7 @@ namespace CommandConsole
     {
         public const string PLUGIN_GUID = "qqqbbb.dredge.CommandConsole";
         public const string PLUGIN_NAME = "Command Console";
-        public const string PLUGIN_VERSION = "1.1.0";
+        public const string PLUGIN_VERSION = "1.1.1";
 
         public static ConfigFile config;
         public static ManualLogSource log;

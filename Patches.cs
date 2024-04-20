@@ -3,6 +3,7 @@ using HarmonyLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Management.Instrumentation;
 using System.Runtime.Remoting.Contexts;
 using System.Text;
 using UnityEngine;
@@ -25,10 +26,10 @@ namespace CommandConsole
             }
         }
 
-        [HarmonyPatch(typeof(WorldEventManager), "AddTerminalCommands")]
+        //[HarmonyPatch(typeof(WorldEventManager), "AddTerminalCommands")]
         class WorldEventManager_AddTerminalCommands_Patch
         {
-            public static bool Prefix(WorldEventManager __instance)
+            public static bool AddTerminalCommandsPrefix(WorldEventManager __instance)
             { // fix: world.event.list command requires args
                 Terminal.Shell.AddCommand("world.event.list", new Action<CommandArg[]>(__instance.ListWorldEvents), 0, 0, "Lists all world events.");
                 Terminal.Shell.AddCommand("world.event", new Action<CommandArg[]>(__instance.SpawnWorldEvent), 1, 2, "world.event <id> <delay>. Starts world.event. Ignores all conditions. Optional delay.");
@@ -82,16 +83,25 @@ namespace CommandConsole
         [HarmonyPatch(typeof(WorldEventManager))]
         class WorldEventManager_Patch
         {
+            [HarmonyPrefix]
+            [HarmonyPatch("AddTerminalCommands")]
+            public static bool AddTerminalCommandsPrefix(WorldEventManager __instance)
+            { // fix: world.event.list command requires args
+                Terminal.Shell.AddCommand("world.event.list", new Action<CommandArg[]>(__instance.ListWorldEvents), 0, 0, "Lists all world events.");
+                Terminal.Shell.AddCommand("world.event", new Action<CommandArg[]>(__instance.SpawnWorldEvent), 1, 2, "world.event <id> <delay>. Starts world.event. Ignores all conditions. Optional delay.");
+                Terminal.Shell.AddCommand("world.event.test", new Action<CommandArg[]>(__instance.TestWorldEvent), 1, 1, "world.event.test <id>. Tests conditions for an event. Does not spawn it.");
+                return false;
+            }
             [HarmonyPostfix]
             [HarmonyPatch("ListWorldEvents")]
             public static void ListWorldEventsPostfix(WorldEventManager __instance)
             {
                 string events = "";
                 GameManager.Instance.DataLoader.allWorldEvents.ForEach(i => events = events + i.name + ", ");
-                Terminal.Log (events);
+                Terminal.Log(events);
             }
             [HarmonyPostfix]
-            [HarmonyPatch("TestWorldEvent")]
+            [HarmonyPatch("TestWorldEvent", new Type[] { typeof(CommandArg[]) })]
             public static void TestWorldEventPostfix(WorldEventManager __instance, CommandArg[] args)
             {
                 string name = args[0].String.ToLower();
